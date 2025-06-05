@@ -1,0 +1,260 @@
+// API base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+
+// Helper function to handle API responses
+const handleResponse = async (response) => {
+    const data = await response.json();
+    
+    if (!response.ok) {
+        throw new Error(data.message || 'Something went wrong');
+    }
+    
+    return data;
+};
+
+// Helper function to make API requests
+const apiRequest = async (endpoint, options = {}) => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        },
+        credentials: 'include', // Include cookies for authentication
+        ...options,
+    };
+
+    // If there's a body and it's not FormData, stringify it
+    if (options.body && !(options.body instanceof FormData)) {
+        config.body = JSON.stringify(options.body);
+    } else if (options.body instanceof FormData) {
+        // Remove Content-Type header for FormData (browser will set it with boundary)
+        delete config.headers['Content-Type'];
+    }
+
+    const response = await fetch(url, config);
+    return handleResponse(response);
+};
+
+// Authentication API functions
+export const authAPI = {
+    // Register a new principal
+    register: async (userData) => {
+        const formData = new FormData();
+        
+        // Append all fields to FormData
+        Object.keys(userData).forEach(key => {
+            if (key === 'avatar' && userData[key] && userData[key].length > 0) {
+                formData.append('avatar', userData[key][0]);
+            } else if (key !== 'avatar' && key !== 'confirmPassword') {
+                formData.append(key, userData[key]);
+            }
+        });
+
+        return apiRequest('/users/register', {
+            method: 'POST',
+            body: formData,
+        });
+    },
+
+    // Login user
+    login: async (credentials) => {
+        return apiRequest('/users/login', {
+            method: 'POST',
+            body: credentials,
+        });
+    },
+
+    // Logout user
+    logout: async () => {
+        return apiRequest('/users/logout', {
+            method: 'POST',
+        });
+    },
+
+    // Get current user
+    getCurrentUser: async () => {
+        return apiRequest('/users/current-user');
+    },
+
+    // Refresh access token
+    refreshToken: async () => {
+        return apiRequest('/users/refresh-token', {
+            method: 'POST',
+        });
+    },
+
+    // Change password
+    changePassword: async (passwordData) => {
+        return apiRequest('/users/change-password', {
+            method: 'POST',
+            body: passwordData,
+        });
+    },
+
+    // Update profile
+    updateProfile: async (profileData) => {
+        return apiRequest('/users/update-profile', {
+            method: 'PATCH',
+            body: profileData,
+        });
+    },
+
+    // Update avatar
+    updateAvatar: async (avatarFile) => {
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+
+        return apiRequest('/users/update-avatar', {
+            method: 'PATCH',
+            body: formData,
+        });
+    },
+
+    // Upload payment slip
+    uploadPaymentSlip: async (paymentSlipFile) => {
+        const formData = new FormData();
+        formData.append('paymentSlip', paymentSlipFile);
+
+        return apiRequest('/users/upload-payment-slip', {
+            method: 'POST',
+            body: formData,
+        });
+    },
+
+    // Get subscription details
+    getSubscriptionDetails: async () => {
+        return apiRequest('/users/subscription-details');
+    },
+};
+
+// Principal/Subadmin API functions
+export const principalAPI = {
+    // Get students
+    getStudents: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/my-students${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Get teachers
+    getTeachers: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/my-teachers${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Add student
+    addStudent: async (studentData) => {
+        return apiRequest('/users/add-student', {
+            method: 'POST',
+            body: studentData,
+        });
+    },
+
+    // Add teacher
+    addTeacher: async (teacherData) => {
+        return apiRequest('/users/add-teacher', {
+            method: 'POST',
+            body: teacherData,
+        });
+    },
+
+    // Add subadmin
+    addSubadmin: async (subadminData) => {
+        return apiRequest('/users/add-subadmin', {
+            method: 'POST',
+            body: subadminData,
+        });
+    },
+
+    // Update student
+    updateStudent: async (studentId, studentData) => {
+        return apiRequest(`/users/update-student/${studentId}`, {
+            method: 'PATCH',
+            body: studentData,
+        });
+    },
+
+    // Delete student
+    deleteStudent: async (studentId) => {
+        return apiRequest(`/users/delete-student/${studentId}`, {
+            method: 'DELETE',
+        });
+    },
+};
+
+// Admin API functions
+export const adminAPI = {
+    // Get pending requests
+    getPendingRequests: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/admin/pending-requests${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Approve user request
+    approveRequest: async (userId, approvalData) => {
+        return apiRequest(`/users/admin/approve-request/${userId}`, {
+            method: 'PATCH',
+            body: approvalData,
+        });
+    },
+
+    // Reject user request
+    rejectRequest: async (userId, rejectionData) => {
+        return apiRequest(`/users/admin/reject-request/${userId}`, {
+            method: 'PATCH',
+            body: rejectionData,
+        });
+    },
+
+    // Get users with payment slips
+    getPaymentSlips: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/admin/payment-slips${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Verify payment
+    verifyPayment: async (userId, verificationData) => {
+        return apiRequest(`/users/admin/verify-payment/${userId}`, {
+            method: 'PATCH',
+            body: verificationData,
+        });
+    },
+
+    // Reject payment
+    rejectPayment: async (userId, rejectionData) => {
+        return apiRequest(`/users/admin/reject-payment/${userId}`, {
+            method: 'PATCH',
+            body: rejectionData,
+        });
+    },
+
+    // Get all users
+    getAllUsers: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/admin/all-users${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Toggle user suspension
+    toggleSuspension: async (userId, suspensionData) => {
+        return apiRequest(`/users/admin/toggle-suspension/${userId}`, {
+            method: 'PATCH',
+            body: suspensionData,
+        });
+    },
+
+    // Get dashboard stats
+    getDashboardStats: async () => {
+        return apiRequest('/users/admin/dashboard-stats');
+    },
+
+    // Extend subscription
+    extendSubscription: async (userId, extensionData) => {
+        return apiRequest(`/users/admin/extend-subscription/${userId}`, {
+            method: 'PATCH',
+            body: extensionData,
+        });
+    },
+};
+
+export default { authAPI, principalAPI, adminAPI };
