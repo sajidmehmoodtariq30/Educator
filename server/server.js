@@ -23,9 +23,11 @@ app.get('/', (req, res) => {
 
 // Import routes
 import userRouter from './routes/UserRoutes.js';
+import questionRouter from './routes/QuestionRoutes.js';
 
 // Use routes
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/questions', questionRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

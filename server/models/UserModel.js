@@ -10,14 +10,12 @@ const userSchema = new Schema(
             type: String,
             enum: ["admin", "principal", "subadmin", "teacher", "student"],
             default: "principal", // Default role for signup is principal
-            index: true,
         },
         username: {
             type: String,
             required: true,
             trim: true,
             unique: true,
-            index: true,
             lowercase: true,
         },
         email: {
@@ -31,7 +29,6 @@ const userSchema = new Schema(
             type: String,
             required: true,
             trim: true,
-            index: true,
         },
         avatar: {
             type: String, // Cloudinary URL
@@ -258,8 +255,6 @@ userSchema.index({ role: 1, isActive: 1 });
 userSchema.index({ accountStatus: 1 });
 userSchema.index({ principalId: 1 });
 userSchema.index({ class: 1, section: 1 });
-userSchema.index({ studentId: 1 });
-userSchema.index({ teacherId: 1 });
 userSchema.index({ subscriptionEndDate: 1 });
 userSchema.index({ trialEndDate: 1 });
 userSchema.index({ paymentStatus: 1 });

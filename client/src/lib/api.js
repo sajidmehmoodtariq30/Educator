@@ -246,9 +246,7 @@ export const adminAPI = {
     // Get dashboard stats
     getDashboardStats: async () => {
         return apiRequest('/users/admin/dashboard-stats');
-    },
-
-    // Extend subscription
+    },    // Extend subscription
     extendSubscription: async (userId, extensionData) => {
         return apiRequest(`/users/admin/extend-subscription/${userId}`, {
             method: 'PATCH',
@@ -257,4 +255,82 @@ export const adminAPI = {
     },
 };
 
-export default { authAPI, principalAPI, adminAPI };
+// Question Management API functions
+export const questionAPI = {
+    // Get all questions with filters
+    getQuestions: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/questions${queryString ? `?${queryString}` : ''}`);
+    },    // Create a new question
+    createQuestion: async (questionData) => {
+        // For simplified version, send JSON data instead of FormData
+        const processedData = {
+            ...questionData,
+            options: questionData.options,
+            tags: questionData.tags
+        };
+
+        return apiRequest('/questions', {
+            method: 'POST',
+            body: processedData,
+        });
+    },
+
+    // Get question by ID
+    getQuestionById: async (questionId) => {
+        return apiRequest(`/questions/${questionId}`);
+    },    // Update question
+    updateQuestion: async (questionId, questionData) => {
+        // For simplified version, send JSON data instead of FormData
+        const processedData = {
+            ...questionData,
+            options: questionData.options,
+            tags: questionData.tags
+        };
+
+        return apiRequest(`/questions/${questionId}`, {
+            method: 'PATCH',
+            body: processedData,
+        });
+    },
+
+    // Delete question (soft delete)
+    deleteQuestion: async (questionId) => {
+        return apiRequest(`/questions/${questionId}`, {
+            method: 'DELETE',
+        });
+    },
+
+    // Permanently delete question
+    permanentDeleteQuestion: async (questionId) => {
+        return apiRequest(`/questions/${questionId}/permanent`, {
+            method: 'DELETE',
+        });
+    },
+
+    // Bulk create questions
+    bulkCreateQuestions: async (questionsArray) => {
+        return apiRequest('/questions/bulk', {
+            method: 'POST',
+            body: { questions: questionsArray },
+        });
+    },
+
+    // Get questions for test generation
+    getQuestionsForTest: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/questions/for-test${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Get question statistics
+    getQuestionStats: async () => {
+        return apiRequest('/questions/stats');
+    },
+
+    // Get filter options
+    getFilterOptions: async () => {
+        return apiRequest('/questions/filter-options');
+    },
+};
+
+export default { authAPI, principalAPI, adminAPI, questionAPI };
