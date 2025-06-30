@@ -8,6 +8,7 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import AdminOverview from './pages/admin/AdminOverview'
 import AdminUserManagement from './pages/admin/AdminUserManagement'
 import AdminPaymentManagement from './pages/admin/AdminPaymentManagement'
+import AdminSchoolManagement from './pages/admin/AdminSchoolManagement'
 import QuestionManagement from './pages/QuestionManagement'
 
 // Principal Pages
@@ -37,6 +38,7 @@ const App = () => {
         <Route path="/admin/questions" element={<QuestionManagement />} />
         <Route path="/admin/users" element={<AdminUserManagement />} />
         <Route path="/admin/payments" element={<AdminPaymentManagement />} />
+        <Route path="/admin/schools" element={<AdminSchoolManagement />} />
         
         {/* Principal Routes */}
         <Route path="/principal/dashboard" element={<PrincipalDashboard />} />

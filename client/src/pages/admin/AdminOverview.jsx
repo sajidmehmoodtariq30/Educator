@@ -1,28 +1,67 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { adminAPI } from '../../lib/api';
 
 const AdminOverview = () => {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    pendingRequests: 0,
+    trialUsers: 0,
+    activeUsers: 0,
+    expiredUsers: 0,
+    totalPrincipals: 0,
+    totalTeachers: 0,
+    totalStudents: 0,
+    pendingPayments: 0,
+    totalUsers: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const response = await adminAPI.getDashboardStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const adminCards = [
     {
       title: 'Pending Approvals',
       description: 'Review and approve user registrations',
-      count: '12',
+      count: loading ? '...' : stats.pendingRequests.toString(),
       color: 'blue',
       icon: '👥',
       gradient: 'from-blue-500 to-cyan-500',
-      action: () => navigate('/admin/users'),
+      action: () => navigate('/admin/users?view=pending'),
       urgent: true
     },
     {
       title: 'Payment Verifications',
       description: 'Verify uploaded payment slips',
-      count: '8',
+      count: loading ? '...' : stats.pendingPayments.toString(),
       color: 'green',
       icon: '💳',
       gradient: 'from-green-500 to-emerald-500',
       action: () => navigate('/admin/payments'),
       urgent: true
+    },
+    {
+      title: 'School Management',
+      description: 'Manage registered schools and institutions',
+      count: loading ? '...' : stats.totalPrincipals.toString(),
+      color: 'orange',
+      icon: '🏫',
+      gradient: 'from-orange-500 to-red-500',
+      action: () => navigate('/admin/schools')
     },
     {
       title: 'Question Bank',
@@ -36,7 +75,7 @@ const AdminOverview = () => {
     {
       title: 'Total Users',
       description: 'Active platform users',
-      count: '1,284',
+      count: loading ? '...' : stats.totalUsers.toString(),
       color: 'indigo',
       icon: '👤',
       gradient: 'from-indigo-500 to-purple-500'

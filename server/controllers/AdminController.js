@@ -1,4 +1,5 @@
 import { User } from "../models/UserModel.js";
+import { School } from "../models/SchoolModel.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -44,7 +45,7 @@ const getPendingUserRequests = asyncHandler(async (req, res) => {
 // Approve user request and start trial
 const approveUserRequest = asyncHandler(async (req, res) => {
     const { userId } = req.params;
-    const { maxStudentsAllowed, subscriptionPlan = "basic" } = req.body;
+    const { maxStudentsAllowed, subscriptionPlan = "basic", schoolData } = req.body;
 
     const user = await User.findById(userId);
 
@@ -69,12 +70,30 @@ const approveUserRequest = asyncHandler(async (req, res) => {
 
     await user.save();
 
+    // Create school record for principals
+    let school = null;
+    if (user.role === "principal") {
+        school = new School({
+            name: user.institutionName || `${user.fullName}'s Institution`,
+            principalId: user._id,
+            subscriptionPlan: subscriptionPlan,
+            maxStudentsAllowed: parseInt(maxStudentsAllowed) || 100,
+            approvedBy: req.user._id,
+            approvedAt: new Date(),
+            ...schoolData // Allow additional school data to be passed
+        });
+        await school.save();
+    }
+
     const updatedUser = await User.findById(userId)
         .select("-password -refreshToken")
         .populate("accessApprovedBy", "fullName");
 
     return res.status(200).json(
-        new ApiResponse(200, updatedUser, "User request approved successfully. Trial period started.")
+        new ApiResponse(200, { 
+            user: updatedUser, 
+            school: school 
+        }, "User request approved successfully. Trial period started.")
     );
 });
 
@@ -383,6 +402,106 @@ const extendUserSubscription = asyncHandler(async (req, res) => {
     );
 });
 
+// Get all schools
+const getAllSchools = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10, search, status, subscriptionPlan } = req.query;
+
+    const query = {};
+    
+    if (search) {
+        query.$or = [
+            { name: { $regex: search, $options: "i" } },
+            { city: { $regex: search, $options: "i" } },
+            { state: { $regex: search, $options: "i" } }
+        ];
+    }
+    
+    if (status) {
+        query.status = status;
+    }
+    
+    if (subscriptionPlan) {
+        query.subscriptionPlan = subscriptionPlan;
+    }
+
+    const schools = await School.find(query)
+        .populate("principalId", "fullName email phone accountStatus")
+        .populate("approvedBy", "fullName")
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await School.countDocuments(query);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            schools,
+            pagination: {
+                current: parseInt(page),
+                pages: Math.ceil(total / parseInt(limit)),
+                total
+            }
+        }, "Schools fetched successfully")
+    );
+});
+
+// Get school by ID
+const getSchoolById = asyncHandler(async (req, res) => {
+    const { schoolId } = req.params;
+
+    const school = await School.findById(schoolId)
+        .populate("principalId", "fullName email phone accountStatus")
+        .populate("approvedBy", "fullName");
+
+    if (!school) {
+        throw new ApiError(404, "School not found");
+    }
+
+    // Update counts
+    await school.updateCounts();
+
+    return res.status(200).json(
+        new ApiResponse(200, school, "School details fetched successfully")
+    );
+});
+
+// Update school settings
+const updateSchoolSettings = asyncHandler(async (req, res) => {
+    const { schoolId } = req.params;
+    const updateData = req.body;
+
+    const school = await School.findById(schoolId);
+
+    if (!school) {
+        throw new ApiError(404, "School not found");
+    }
+
+    // Update allowed fields
+    const allowedFields = [
+        'name', 'address', 'city', 'state', 'country', 'postalCode', 
+        'phone', 'email', 'website', 'schoolType', 'boards', 
+        'classesOffered', 'subscriptionPlan', 'maxStudentsAllowed', 
+        'maxTeachersAllowed', 'maxSubAdminsAllowed', 'status', 
+        'licenseNumber', 'settings', 'colors'
+    ];
+
+    allowedFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+            school[field] = updateData[field];
+        }
+    });
+
+    await school.save();
+
+    const updatedSchool = await School.findById(schoolId)
+        .populate("principalId", "fullName email phone accountStatus")
+        .populate("approvedBy", "fullName");
+
+    return res.status(200).json(
+        new ApiResponse(200, updatedSchool, "School updated successfully")
+    );
+});
+
 export {
     getPendingUserRequests,
     approveUserRequest,
@@ -393,5 +512,8 @@ export {
     getAllUsers,
     toggleUserSuspension,
     getDashboardStats,
-    extendUserSubscription
+    extendUserSubscription,
+    getAllSchools,
+    getSchoolById,
+    updateSchoolSettings
 };

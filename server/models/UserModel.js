@@ -87,6 +87,10 @@ const userSchema = new Schema(
             type: String,
             trim: true,
         },
+        paymentVerifiedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User", // Reference to the admin who verified/rejected payment
+        },
         
         // Access Request System
         accessRequestDate: {
@@ -99,6 +103,10 @@ const userSchema = new Schema(
         accessRejectionReason: {
             type: String,
             trim: true,
+        },
+        accessApprovedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User", // Reference to the admin who approved/rejected
         },
         
         // Principal-specific fields

@@ -30,7 +30,10 @@ import {
     getAllUsers,
     toggleUserSuspension,
     getDashboardStats,
-    extendUserSubscription
+    extendUserSubscription,
+    getAllSchools,
+    getSchoolById,
+    updateSchoolSettings
 } from "../controllers/AdminController.js";
 import { upload } from "../middleware/multerMiddleware.js";
 import { verifyJWT, verifyAdmin, verifyPrincipalOrSubadmin } from "../middleware/authMiddleware.js";
@@ -78,5 +81,10 @@ router.route("/admin/all-users").get(verifyJWT, verifyAdmin, getAllUsers);
 router.route("/admin/toggle-suspension/:userId").patch(verifyJWT, verifyAdmin, toggleUserSuspension);
 router.route("/admin/dashboard-stats").get(verifyJWT, verifyAdmin, getDashboardStats);
 router.route("/admin/extend-subscription/:userId").patch(verifyJWT, verifyAdmin, extendUserSubscription);
+
+// School management routes (Admin only)
+router.route("/admin/schools").get(verifyJWT, verifyAdmin, getAllSchools);
+router.route("/admin/schools/:schoolId").get(verifyJWT, verifyAdmin, getSchoolById);
+router.route("/admin/schools/:schoolId").put(verifyJWT, verifyAdmin, updateSchoolSettings);
 
 export default router;

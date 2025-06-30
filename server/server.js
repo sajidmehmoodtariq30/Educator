@@ -11,8 +11,10 @@ const app = express();
 app.use(cookieParser());
 app.use(express.json());
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-    credentials: true,
+    origin: [process.env.FRONTEND_URL], // Add your frontend URLs from environment
+    credentials: true, // Allow credentials (cookies, authorization headers)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 connectDB();
@@ -39,7 +41,7 @@ app.use((err, req, res, next) => {
             message: 'File too large. Maximum size allowed is 5MB.'
         });
     }
-    
+
     if (err.message === 'Only image files are allowed!') {
         return res.status(400).json({
             success: false,
@@ -47,12 +49,12 @@ app.use((err, req, res, next) => {
             message: err.message
         });
     }
-    
+
     const statusCode = err.statusCode || 500;
     const message = err.message || 'Internal Server Error';
-    
+
     console.error('Error:', err);
-    
+
     res.status(statusCode).json({
         success: false,
         statusCode,

@@ -333,4 +333,26 @@ export const questionAPI = {
     },
 };
 
-export default { authAPI, principalAPI, adminAPI, questionAPI };
+// School Management API functions
+export const schoolAPI = {
+    // Get all schools
+    getAllSchools: async (params = {}) => {
+        const queryString = new URLSearchParams(params).toString();
+        return apiRequest(`/users/admin/schools${queryString ? `?${queryString}` : ''}`);
+    },
+
+    // Get school by ID
+    getSchoolById: async (schoolId) => {
+        return apiRequest(`/users/admin/schools/${schoolId}`);
+    },
+
+    // Update school settings
+    updateSchoolSettings: async (schoolId, schoolData) => {
+        return apiRequest(`/users/admin/schools/${schoolId}`, {
+            method: 'PUT',
+            body: schoolData,
+        });
+    },
+};
+
+export default { authAPI, principalAPI, adminAPI, questionAPI, schoolAPI };
