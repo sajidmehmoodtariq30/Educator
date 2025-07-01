@@ -1,11 +1,36 @@
 // API base URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
+// Import auth utilities
+import authUtils from './auth.js';
+
 // Helper function to handle API responses
 const handleResponse = async (response) => {
     const data = await response.json();
     
     if (!response.ok) {
+        // If unauthorized and we have a refresh token, try to refresh
+        if (response.status === 401 && data.message?.includes('token')) {
+            try {
+                const refreshResponse = await fetch(`${API_BASE_URL}/users/refresh-token`, {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+                
+                if (refreshResponse.ok) {
+                    const refreshData = await refreshResponse.json();
+                    if (refreshData.data && refreshData.data.accessToken) {
+                        authUtils.setToken(refreshData.data.accessToken);
+                        // You might want to retry the original request here
+                    }
+                }
+            } catch (refreshError) {
+                // If refresh fails, clear the token and redirect to login
+                authUtils.removeToken();
+                console.error('Token refresh failed:', refreshError);
+            }
+        }
+        
         throw new Error(data.message || 'Something went wrong');
     }
     
@@ -16,9 +41,13 @@ const handleResponse = async (response) => {
 const apiRequest = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    // Get token from auth utilities
+    const token = authUtils.getToken();
+    
     const config = {
         headers: {
             'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
             ...options.headers,
         },
         credentials: 'include', // Include cookies for authentication
@@ -60,17 +89,29 @@ export const authAPI = {
 
     // Login user
     login: async (credentials) => {
-        return apiRequest('/users/login', {
+        const response = await apiRequest('/users/login', {
             method: 'POST',
             body: credentials,
         });
+        
+        // Store token using auth utilities
+        if (response.data && response.data.accessToken) {
+            authUtils.setToken(response.data.accessToken);
+        }
+        
+        return response;
     },
 
     // Logout user
     logout: async () => {
-        return apiRequest('/users/logout', {
+        const response = await apiRequest('/users/logout', {
             method: 'POST',
         });
+        
+        // Clear token using auth utilities
+        authUtils.removeToken();
+        
+        return response;
     },
 
     // Get current user

@@ -5,9 +5,31 @@ import { User } from "../models/UserModel.js";
 import dotenv from "dotenv";
 dotenv.config();
 
+// Debug helper function
+const debugAuth = (location, token, cookies) => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`[AUTH DEBUG] ${location}:`);
+        console.log(`  Token from header: ${token?.substring(0, 20)}...`);
+        console.log(`  Cookies available: ${Object.keys(cookies || {}).join(', ')}`);
+    }
+};
+
 export const verifyJWT = asyncHandler(async (req, res, next) => {
     try {
-        const token = req.cookies?.accessToken || req.headers.authorization?.replace("Bearer ", "");
+        // Try to get token from cookies first, then from Authorization header
+        let token = req.cookies?.accessToken;
+        
+        debugAuth('Cookie check', token, req.cookies);
+        
+        if (!token) {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.replace("Bearer ", "");
+            }
+        }
+        
+        debugAuth('Header check', token, req.cookies);
+        
         if (!token) {
             throw new ApiError(401, "Unauthorized - No token provided");
         }
